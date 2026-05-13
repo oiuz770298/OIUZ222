@@ -10,12 +10,14 @@ import pygame
 # Constants
 # ---------------------------------------------------------------------------
 
-WINDOW_SIZE = 720
 BOARD_SIZE = 640
 SQUARE_SIZE = BOARD_SIZE // 8
-BOARD_OFFSET_X = (WINDOW_SIZE - BOARD_SIZE) // 2
-BOARD_OFFSET_Y = 80
-CARD_DISPLAY_HEIGHT = 70
+CARD_PANEL_WIDTH = 220
+WINDOW_WIDTH = BOARD_SIZE + CARD_PANEL_WIDTH + 60
+WINDOW_HEIGHT = BOARD_SIZE + 100
+BOARD_OFFSET_X = 30
+BOARD_OFFSET_Y = 60
+CARD_PANEL_X = BOARD_OFFSET_X + BOARD_SIZE + 20
 
 FPS = 60
 
@@ -30,12 +32,13 @@ HIGHLIGHT_CAPTURE = (200, 80, 80, 160)
 HIGHLIGHT_CHECK = (255, 50, 50, 120)
 HIGHLIGHT_LAST_MOVE = (205, 210, 106, 100)
 CARD_BG = (30, 30, 60)
+CARD_BORDER = (180, 160, 120)
+CARD_FACE = (250, 245, 230)
+CARD_RED = (180, 30, 30)
 CARD_ACCENT = (255, 200, 60)
 CARD_TEXT = (255, 255, 255)
 STATUS_BG = (40, 40, 40)
-BUTTON_BG = (70, 130, 70)
-BUTTON_HOVER = (90, 160, 90)
-BUTTON_TEXT = (255, 255, 255)
+INFO_PANEL_BG = (35, 35, 50)
 OVERLAY_BG = (0, 0, 0, 180)
 
 PAWN_FILES = {1: "a", 2: "b", 3: "c", 4: "d", 5: "e", 6: "f", 7: "g", 8: "h"}
@@ -255,17 +258,21 @@ class Renderer:
         self.piece_font: pygame.font.Font | None = None
         self.ui_font: pygame.font.Font | None = None
         self.small_font: pygame.font.Font | None = None
-        self.card_font: pygame.font.Font | None = None
+        self.card_number_font: pygame.font.Font | None = None
+        self.card_label_font: pygame.font.Font | None = None
+        self.card_pawn_font: pygame.font.Font | None = None
         self.title_font: pygame.font.Font | None = None
         self._init_fonts()
 
     def _init_fonts(self):
         pygame.font.init()
         self.piece_font = pygame.font.SysFont("dejavusans,segoeuisymbol,symbola,arial", SQUARE_SIZE - 12)
-        self.ui_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 22)
-        self.small_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 16)
-        self.card_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 36, bold=True)
-        self.title_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 28, bold=True)
+        self.ui_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 20)
+        self.small_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 15)
+        self.card_number_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 72, bold=True)
+        self.card_label_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 18, bold=True)
+        self.card_pawn_font = pygame.font.SysFont("dejavusans,segoeuisymbol,symbola,arial", 48)
+        self.title_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 26, bold=True)
 
     # -- Board ---------------------------------------------------------------
 
@@ -337,50 +344,125 @@ class Renderer:
             self.screen.blit(lbl_rank, (BOARD_OFFSET_X - 16,
                                         BOARD_OFFSET_Y + i * SQUARE_SIZE + 2))
 
-    # -- Card display --------------------------------------------------------
+    # -- Card panel (right side) ---------------------------------------------
 
-    def draw_chaos_card(self, card_number: int, forced_file: str, phase: str):
-        rect = pygame.Rect(BOARD_OFFSET_X, 5, BOARD_SIZE, CARD_DISPLAY_HEIGHT)
-        pygame.draw.rect(self.screen, CARD_BG, rect, border_radius=8)
-        pygame.draw.rect(self.screen, CARD_ACCENT, rect, 2, border_radius=8)
+    def draw_card_panel(self, card_number: int, forced_file: str, phase: str):
+        """Draw the Chaos Card as a playing-card graphic beside the board."""
+        panel_x = CARD_PANEL_X
+        panel_w = CARD_PANEL_WIDTH
 
-        card_label = self.card_font.render(f"CHAOS CARD  {card_number}", True, CARD_ACCENT)
-        self.screen.blit(card_label, (rect.x + 15, rect.y + 6))
+        # Panel background
+        panel_rect = pygame.Rect(panel_x, BOARD_OFFSET_Y, panel_w, BOARD_SIZE)
+        pygame.draw.rect(self.screen, INFO_PANEL_BG, panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, (60, 60, 80), panel_rect, 1, border_radius=10)
 
+        # Title
+        title = self.card_label_font.render("CHAOS CARD", True, CARD_ACCENT)
+        self.screen.blit(title, title.get_rect(centerx=panel_x + panel_w // 2,
+                                                top=panel_rect.y + 12))
+
+        # -- The card itself --
+        card_w, card_h = 160, 220
+        card_x = panel_x + (panel_w - card_w) // 2
+        card_y = panel_rect.y + 45
+        card_rect = pygame.Rect(card_x, card_y, card_w, card_h)
+
+        # Card shadow
+        shadow = pygame.Rect(card_x + 3, card_y + 3, card_w, card_h)
+        pygame.draw.rect(self.screen, (15, 15, 15), shadow, border_radius=10)
+
+        # Card face
+        pygame.draw.rect(self.screen, CARD_FACE, card_rect, border_radius=10)
+        pygame.draw.rect(self.screen, CARD_BORDER, card_rect, 3, border_radius=10)
+
+        # Inner border
+        inner = card_rect.inflate(-16, -16)
+        pygame.draw.rect(self.screen, CARD_BORDER, inner, 1, border_radius=6)
+
+        # Number (large, centered)
+        num_colour = CARD_RED if card_number in (1, 3, 5, 7) else (30, 30, 100)
+        num_txt = self.card_number_font.render(str(card_number), True, num_colour)
+        self.screen.blit(num_txt, num_txt.get_rect(center=card_rect.center))
+
+        # Corner numbers (top-left, bottom-right)
+        corner_font = self.card_label_font
+        tl = corner_font.render(str(card_number), True, num_colour)
+        self.screen.blit(tl, (card_x + 10, card_y + 8))
+        br = corner_font.render(str(card_number), True, num_colour)
+        br_rect = br.get_rect(right=card_x + card_w - 10, bottom=card_y + card_h - 8)
+        self.screen.blit(br, br_rect)
+
+        # Pawn symbol below the number
+        pawn_sym = "\u265F"
+        pawn_txt = self.card_pawn_font.render(pawn_sym, True, num_colour)
+        self.screen.blit(pawn_txt, pawn_txt.get_rect(
+            centerx=card_rect.centerx, top=card_rect.centery + 30))
+
+        # -- Info below the card --
+        info_y = card_y + card_h + 20
+
+        file_lbl = self.card_label_font.render(
+            f"{forced_file.upper()}-PAWN", True, CARD_TEXT)
+        self.screen.blit(file_lbl, file_lbl.get_rect(
+            centerx=panel_x + panel_w // 2, top=info_y))
+
+        # Phase status
         if phase == "forced":
-            info = self.ui_font.render(
-                f"Must move {forced_file}-pawn first!", True, CARD_TEXT)
+            phase_txt = self.ui_font.render("Must move first!", True, (255, 180, 80))
         else:
-            info = self.ui_font.render("Standard chess  —  play freely", True, (170, 220, 170))
-        self.screen.blit(info, (rect.x + 15, rect.y + 42))
+            phase_txt = self.ui_font.render("Standard chess", True, (140, 200, 140))
+        self.screen.blit(phase_txt, phase_txt.get_rect(
+            centerx=panel_x + panel_w // 2, top=info_y + 28))
+
+        # Divider
+        div_y = info_y + 65
+        pygame.draw.line(self.screen, (60, 60, 80),
+                         (panel_x + 20, div_y), (panel_x + panel_w - 20, div_y))
+
+        # Controls help
+        help_y = div_y + 15
+        controls = [
+            ("Click", "Select / Move"),
+            ("R", "New Game"),
+            ("Q", "Quit"),
+        ]
+        for key, desc in controls:
+            key_txt = self.card_label_font.render(key, True, CARD_ACCENT)
+            desc_txt = self.small_font.render(desc, True, (160, 160, 175))
+            self.screen.blit(key_txt, (panel_x + 15, help_y))
+            self.screen.blit(desc_txt, (panel_x + 15 + key_txt.get_width() + 8, help_y + 2))
+            help_y += 24
 
     # -- Status bar ----------------------------------------------------------
 
     def draw_status(self, text: str):
-        bar = pygame.Rect(0, BOARD_OFFSET_Y + BOARD_SIZE + 20,
-                          WINDOW_SIZE, 30)
-        pygame.draw.rect(self.screen, STATUS_BG, bar)
+        bar = pygame.Rect(BOARD_OFFSET_X, BOARD_OFFSET_Y + BOARD_SIZE + 20,
+                          BOARD_SIZE, 28)
+        pygame.draw.rect(self.screen, STATUS_BG, bar, border_radius=4)
         lbl = self.ui_font.render(text, True, WHITE)
         self.screen.blit(lbl, (bar.x + 10, bar.y + 4))
 
     # -- Game-over overlay ---------------------------------------------------
 
     def draw_game_over(self, message: str):
-        overlay = pygame.Surface((WINDOW_SIZE, WINDOW_SIZE), pygame.SRCALPHA)
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
         overlay.fill(OVERLAY_BG)
         self.screen.blit(overlay, (0, 0))
 
         msg = self.title_font.render(message, True, WHITE)
-        self.screen.blit(msg, msg.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2 - 30)))
+        cx = BOARD_OFFSET_X + BOARD_SIZE // 2
+        cy = BOARD_OFFSET_Y + BOARD_SIZE // 2
+        self.screen.blit(msg, msg.get_rect(center=(cx, cy - 20)))
 
         hint = self.ui_font.render("Press R to restart  |  Q to quit", True, (200, 200, 200))
-        self.screen.blit(hint, hint.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2 + 20)))
+        self.screen.blit(hint, hint.get_rect(center=(cx, cy + 18)))
 
     # -- Thinking indicator --------------------------------------------------
 
     def draw_thinking(self):
         lbl = self.ui_font.render("AI is thinking...", True, CARD_ACCENT)
-        self.screen.blit(lbl, lbl.get_rect(center=(WINDOW_SIZE // 2, BOARD_OFFSET_Y + BOARD_SIZE + 45)))
+        cx = BOARD_OFFSET_X + BOARD_SIZE // 2
+        self.screen.blit(lbl, lbl.get_rect(center=(cx, BOARD_OFFSET_Y + BOARD_SIZE + 34)))
 
 
 # ---------------------------------------------------------------------------
@@ -490,7 +572,7 @@ class ChaosCardChess:
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("Chaos Card Chess")
     clock = pygame.time.Clock()
 
@@ -563,9 +645,14 @@ def main():
 
         # -- Draw --
         screen.fill((25, 25, 25))
-        renderer.draw_chaos_card(game.card_number, game.forced_file, game.phase)
+
+        # Title
+        title_lbl = renderer.title_font.render("Chaos Card Chess", True, CARD_ACCENT)
+        screen.blit(title_lbl, (BOARD_OFFSET_X, 15))
+
         renderer.draw_board(game.board, game.selected_square,
                             game.legal_targets, game.last_move)
+        renderer.draw_card_panel(game.card_number, game.forced_file, game.phase)
         if game.game_over:
             renderer.draw_game_over(game.game_over_message)
         else:
