@@ -67,18 +67,22 @@ const PST = {
   ]
 };
 
-let game, cardNumber, forcedFile, phase, selectedSquare, legalTargets, lastMove, aiThinking;
+let game, whiteCard, whiteForced, whitePhase, blackCard, blackForced, blackPhase;
+let selectedSquare, legalTargets, lastMove, aiThinking;
 
 function initGame() {
   game = new Chess();
-  cardNumber = Math.floor(Math.random() * 8) + 1;
-  forcedFile = PAWN_FILES[cardNumber];
-  phase = 'forced';
+  whiteCard = Math.floor(Math.random() * 8) + 1;
+  whiteForced = PAWN_FILES[whiteCard];
+  whitePhase = 'forced';
+  blackCard = Math.floor(Math.random() * 8) + 1;
+  blackForced = PAWN_FILES[blackCard];
+  blackPhase = 'forced';
   selectedSquare = null;
   legalTargets = [];
   lastMove = null;
   aiThinking = false;
-  updateCard();
+  updateCards();
   renderBoard();
   updateStatus();
 }
@@ -169,54 +173,57 @@ function renderBoard() {
 
 // --- Card Panel ---
 
-function updateCard() {
-  const numEl = document.getElementById('card-num');
-  const topEl = document.getElementById('corner-top');
-  const botEl = document.getElementById('corner-bot');
-  const labelEl = document.getElementById('pawn-label');
-  const phaseEl = document.getElementById('phase-text');
+function updateOneCard(prefix, cardNum, forcedFile, phase) {
+  const numEl = document.getElementById(prefix + '-card-num');
+  const topEl = document.getElementById(prefix + '-corner-top');
+  const botEl = document.getElementById(prefix + '-corner-bot');
+  const labelEl = document.getElementById(prefix + '-pawn-label');
+  const phaseEl = document.getElementById(prefix + '-phase-text');
 
-  numEl.textContent = cardNumber;
-  topEl.textContent = cardNumber;
-  botEl.textContent = cardNumber;
+  numEl.textContent = cardNum;
+  topEl.textContent = cardNum;
+  botEl.textContent = cardNum;
 
-  const isOdd = cardNumber % 2 === 1;
+  const isOdd = cardNum % 2 === 1;
   const colorClass = isOdd ? 'red' : 'blue';
   numEl.className = 'card-number ' + colorClass;
   topEl.className = 'card-corner top ' + colorClass;
   botEl.className = 'card-corner bottom ' + colorClass;
 
-  // Set pawn color too
-  const pawnEl = document.querySelector('.card-pawn');
+  const cardEl = document.getElementById(prefix === 'w' ? 'white-card' : 'black-card');
+  const pawnEl = cardEl.querySelector('.card-pawn');
   if (pawnEl) pawnEl.style.color = isOdd ? '#b41e1e' : '#1e2e80';
 
   labelEl.textContent = forcedFile.toUpperCase() + '-PAWN';
 
   if (phase === 'forced') {
     phaseEl.textContent = 'Must move first!';
-    phaseEl.className = 'forced';
-    phaseEl.id = 'phase-text';
+    phaseEl.className = 'phase-text forced';
   } else {
-    phaseEl.textContent = 'Standard chess';
-    phaseEl.className = 'normal';
-    phaseEl.id = 'phase-text';
+    phaseEl.textContent = 'Done ✓';
+    phaseEl.className = 'phase-text normal';
   }
+}
+
+function updateCards() {
+  updateOneCard('w', whiteCard, whiteForced, whitePhase);
+  updateOneCard('b', blackCard, blackForced, blackPhase);
 }
 
 // --- Game Logic ---
 
-function getForcedMoves() {
+function getForcedMoves(file) {
   const moves = game.moves({ verbose: true });
   return moves.filter(m => {
     const piece = game.get(m.from);
-    return piece && piece.type === 'p' && m.from[0] === forcedFile;
+    return piece && piece.type === 'p' && m.from[0] === file;
   });
 }
 
 function getLegalMovesForSquare(sq) {
   let moves;
-  if (phase === 'forced') {
-    moves = getForcedMoves();
+  if (whitePhase === 'forced') {
+    moves = getForcedMoves(whiteForced);
   } else {
     moves = game.moves({ verbose: true });
   }
@@ -231,10 +238,10 @@ function onSquareClick(sq) {
     const moveResult = game.move({ from: selectedSquare, to: sq, promotion: 'q' });
     if (moveResult) {
       lastMove = { from: selectedSquare, to: sq };
-      if (phase === 'forced') phase = 'normal';
+      if (whitePhase === 'forced') whitePhase = 'normal';
       selectedSquare = null;
       legalTargets = [];
-      updateCard();
+      updateCards();
       renderBoard();
       checkGameOver();
       if (!game.game_over()) {
@@ -308,8 +315,10 @@ function scheduleAI() {
     if (move) {
       game.move(move);
       lastMove = { from: move.from, to: move.to };
+      if (blackPhase === 'forced') blackPhase = 'normal';
     }
     aiThinking = false;
+    updateCards();
     renderBoard();
     checkGameOver();
     updateStatus();
@@ -383,11 +392,11 @@ function aiBestMove(g, depth) {
   let moves = g.moves({ verbose: true });
   if (moves.length === 0) return null;
 
-  // For forced phase (AI as black with forced file — unlikely but handle)
-  if (phase === 'forced') {
+  // AI (black) must use its own forced pawn on first move
+  if (blackPhase === 'forced') {
     const forced = moves.filter(m => {
       const p = g.get(m.from);
-      return p && p.type === 'p' && m.from[0] === forcedFile;
+      return p && p.type === 'p' && m.from[0] === blackForced;
     });
     if (forced.length > 0) moves = forced;
   }

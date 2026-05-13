@@ -346,8 +346,64 @@ class Renderer:
 
     # -- Card panel (right side) ---------------------------------------------
 
-    def draw_card_panel(self, card_number: int, forced_file: str, phase: str):
-        """Draw the Chaos Card as a playing-card graphic beside the board."""
+    def _draw_mini_card(self, cx: int, top_y: int,
+                        card_number: int, forced_file: str, phase: str,
+                        label: str):
+        """Draw a single mini Chaos Card centered at cx."""
+        card_w, card_h = 120, 160
+        card_x = cx - card_w // 2
+        card_y = top_y
+        card_rect = pygame.Rect(card_x, card_y, card_w, card_h)
+
+        # Shadow + face
+        shadow = pygame.Rect(card_x + 2, card_y + 2, card_w, card_h)
+        pygame.draw.rect(self.screen, (15, 15, 15), shadow, border_radius=8)
+        pygame.draw.rect(self.screen, CARD_FACE, card_rect, border_radius=8)
+        pygame.draw.rect(self.screen, CARD_BORDER, card_rect, 2, border_radius=8)
+
+        inner = card_rect.inflate(-12, -12)
+        pygame.draw.rect(self.screen, CARD_BORDER, inner, 1, border_radius=5)
+
+        # Number
+        num_colour = CARD_RED if card_number % 2 == 1 else (30, 30, 100)
+        num_font = pygame.font.SysFont("dejavusans,arial", 48, bold=True)
+        num_txt = num_font.render(str(card_number), True, num_colour)
+        self.screen.blit(num_txt, num_txt.get_rect(centerx=card_rect.centerx,
+                                                    centery=card_rect.centery - 10))
+
+        # Corner numbers
+        corner_font = self.small_font
+        tl = corner_font.render(str(card_number), True, num_colour)
+        self.screen.blit(tl, (card_x + 8, card_y + 6))
+        br = corner_font.render(str(card_number), True, num_colour)
+        self.screen.blit(br, br.get_rect(right=card_x + card_w - 8,
+                                          bottom=card_y + card_h - 6))
+
+        # Pawn symbol
+        pawn_font = pygame.font.SysFont("dejavusans,arial", 24)
+        pawn_txt = pawn_font.render("\u265F", True, num_colour)
+        self.screen.blit(pawn_txt, pawn_txt.get_rect(
+            centerx=card_rect.centerx, top=card_rect.centery + 22))
+
+        # Label above card
+        lbl_txt = self.small_font.render(label, True, CARD_TEXT)
+        self.screen.blit(lbl_txt, lbl_txt.get_rect(centerx=cx, bottom=card_y - 4))
+
+        # File label below card
+        file_lbl = self.small_font.render(
+            f"{forced_file.upper()}-PAWN", True, CARD_TEXT)
+        self.screen.blit(file_lbl, file_lbl.get_rect(centerx=cx, top=card_y + card_h + 4))
+
+        # Phase text
+        if phase == "forced":
+            ptxt = self.small_font.render("Must move first!", True, (255, 180, 80))
+        else:
+            ptxt = self.small_font.render("Done \u2713", True, (140, 200, 140))
+        self.screen.blit(ptxt, ptxt.get_rect(centerx=cx, top=card_y + card_h + 22))
+
+    def draw_card_panel(self, w_card: int, w_file: str, w_phase: str,
+                        b_card: int, b_file: str, b_phase: str):
+        """Draw both Chaos Cards as mini playing-card graphics."""
         panel_x = CARD_PANEL_X
         panel_w = CARD_PANEL_WIDTH
 
@@ -356,82 +412,37 @@ class Renderer:
         pygame.draw.rect(self.screen, INFO_PANEL_BG, panel_rect, border_radius=10)
         pygame.draw.rect(self.screen, (60, 60, 80), panel_rect, 1, border_radius=10)
 
+        cx = panel_x + panel_w // 2
+
         # Title
-        title = self.card_label_font.render("CHAOS CARD", True, CARD_ACCENT)
-        self.screen.blit(title, title.get_rect(centerx=panel_x + panel_w // 2,
-                                                top=panel_rect.y + 12))
+        title = self.card_label_font.render("CHAOS CARDS", True, CARD_ACCENT)
+        self.screen.blit(title, title.get_rect(centerx=cx, top=panel_rect.y + 10))
 
-        # -- The card itself --
-        card_w, card_h = 160, 220
-        card_x = panel_x + (panel_w - card_w) // 2
-        card_y = panel_rect.y + 45
-        card_rect = pygame.Rect(card_x, card_y, card_w, card_h)
-
-        # Card shadow
-        shadow = pygame.Rect(card_x + 3, card_y + 3, card_w, card_h)
-        pygame.draw.rect(self.screen, (15, 15, 15), shadow, border_radius=10)
-
-        # Card face
-        pygame.draw.rect(self.screen, CARD_FACE, card_rect, border_radius=10)
-        pygame.draw.rect(self.screen, CARD_BORDER, card_rect, 3, border_radius=10)
-
-        # Inner border
-        inner = card_rect.inflate(-16, -16)
-        pygame.draw.rect(self.screen, CARD_BORDER, inner, 1, border_radius=6)
-
-        # Number (large, centered)
-        num_colour = CARD_RED if card_number in (1, 3, 5, 7) else (30, 30, 100)
-        num_txt = self.card_number_font.render(str(card_number), True, num_colour)
-        self.screen.blit(num_txt, num_txt.get_rect(center=card_rect.center))
-
-        # Corner numbers (top-left, bottom-right)
-        corner_font = self.card_label_font
-        tl = corner_font.render(str(card_number), True, num_colour)
-        self.screen.blit(tl, (card_x + 10, card_y + 8))
-        br = corner_font.render(str(card_number), True, num_colour)
-        br_rect = br.get_rect(right=card_x + card_w - 10, bottom=card_y + card_h - 8)
-        self.screen.blit(br, br_rect)
-
-        # Pawn symbol below the number
-        pawn_sym = "\u265F"
-        pawn_txt = self.card_pawn_font.render(pawn_sym, True, num_colour)
-        self.screen.blit(pawn_txt, pawn_txt.get_rect(
-            centerx=card_rect.centerx, top=card_rect.centery + 30))
-
-        # -- Info below the card --
-        info_y = card_y + card_h + 20
-
-        file_lbl = self.card_label_font.render(
-            f"{forced_file.upper()}-PAWN", True, CARD_TEXT)
-        self.screen.blit(file_lbl, file_lbl.get_rect(
-            centerx=panel_x + panel_w // 2, top=info_y))
-
-        # Phase status
-        if phase == "forced":
-            phase_txt = self.ui_font.render("Must move first!", True, (255, 180, 80))
-        else:
-            phase_txt = self.ui_font.render("Standard chess", True, (140, 200, 140))
-        self.screen.blit(phase_txt, phase_txt.get_rect(
-            centerx=panel_x + panel_w // 2, top=info_y + 28))
+        # Your card (white)
+        self._draw_mini_card(cx, panel_rect.y + 55, w_card, w_file, w_phase,
+                             "\u2654 YOUR CARD")
 
         # Divider
-        div_y = info_y + 65
+        div_y = panel_rect.y + 275
         pygame.draw.line(self.screen, (60, 60, 80),
-                         (panel_x + 20, div_y), (panel_x + panel_w - 20, div_y))
+                         (panel_x + 15, div_y), (panel_x + panel_w - 15, div_y))
 
-        # Controls help
-        help_y = div_y + 15
-        controls = [
-            ("Click", "Select / Move"),
-            ("R", "New Game"),
-            ("Q", "Quit"),
-        ]
+        # Opponent card (black)
+        self._draw_mini_card(cx, panel_rect.y + 300, b_card, b_file, b_phase,
+                             "\u265A OPPONENT")
+
+        # Controls
+        help_y = panel_rect.y + 530
+        pygame.draw.line(self.screen, (60, 60, 80),
+                         (panel_x + 15, help_y - 10),
+                         (panel_x + panel_w - 15, help_y - 10))
+        controls = [("Click", "Select / Move"), ("R", "New Game"), ("Q", "Quit")]
         for key, desc in controls:
             key_txt = self.card_label_font.render(key, True, CARD_ACCENT)
             desc_txt = self.small_font.render(desc, True, (160, 160, 175))
             self.screen.blit(key_txt, (panel_x + 15, help_y))
             self.screen.blit(desc_txt, (panel_x + 15 + key_txt.get_width() + 8, help_y + 2))
-            help_y += 24
+            help_y += 22
 
     # -- Status bar ----------------------------------------------------------
 
@@ -474,9 +485,12 @@ class ChaosCardChess:
 
     def __init__(self):
         self.board = chess.Board()
-        self.card_number = random.randint(1, 8)
-        self.forced_file = PAWN_FILES[self.card_number]
-        self.phase = "forced"          # "forced" or "normal"
+        self.white_card = random.randint(1, 8)
+        self.white_forced = PAWN_FILES[self.white_card]
+        self.white_phase = "forced"
+        self.black_card = random.randint(1, 8)
+        self.black_forced = PAWN_FILES[self.black_card]
+        self.black_phase = "forced"
         self.selected_square: int | None = None
         self.legal_targets: set[int] = set()
         self.last_move: chess.Move | None = None
@@ -490,9 +504,9 @@ class ChaosCardChess:
 
     # -- Helpers -------------------------------------------------------------
 
-    def _forced_legal_moves(self) -> list[chess.Move]:
-        """Return only legal pawn moves from the forced file."""
-        file_idx = ord(self.forced_file) - ord("a")
+    def _forced_legal_moves(self, file_letter: str) -> list[chess.Move]:
+        """Return only legal pawn moves from the given file."""
+        file_idx = ord(file_letter) - ord("a")
         return [
             m for m in self.board.legal_moves
             if chess.square_file(m.from_square) == file_idx
@@ -500,42 +514,59 @@ class ChaosCardChess:
             and self.board.piece_at(m.from_square).piece_type == chess.PAWN
         ]
 
+    def _current_phase(self) -> str:
+        if self.board.turn == chess.WHITE:
+            return self.white_phase
+        return self.black_phase
+
+    def _current_forced(self) -> str:
+        if self.board.turn == chess.WHITE:
+            return self.white_forced
+        return self.black_forced
+
     def legal_moves_for_square(self, sq: int) -> set[int]:
-        moves = (
-            self._forced_legal_moves() if self.phase == "forced"
-            else list(self.board.legal_moves)
-        )
+        if self._current_phase() == "forced":
+            moves = self._forced_legal_moves(self._current_forced())
+        else:
+            moves = list(self.board.legal_moves)
         return {m.to_square for m in moves if m.from_square == sq}
 
     def try_move(self, from_sq: int, to_sq: int) -> bool:
         """Attempt to make a move. Returns True on success."""
+        phase = self._current_phase()
+        forced = self._current_forced()
         candidates = (
-            self._forced_legal_moves() if self.phase == "forced"
+            self._forced_legal_moves(forced) if phase == "forced"
             else list(self.board.legal_moves)
         )
         for m in candidates:
             if m.from_square == from_sq and m.to_square == to_sq:
                 self.board.push(m)
                 self.last_move = m
-                self._post_move()
+                self._post_move(phase)
                 return True
 
         # Handle promotion: try all promotion pieces
         for promo in [chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT]:
             m = chess.Move(from_sq, to_sq, promotion=promo)
             if m in self.board.legal_moves:
-                if self.phase == "forced" and m not in self._forced_legal_moves():
+                if phase == "forced" and m not in self._forced_legal_moves(forced):
                     continue
                 self.board.push(m)
                 self.last_move = m
-                self._post_move()
+                self._post_move(phase)
                 return True
         return False
 
-    def _post_move(self):
+    def _post_move(self, phase_before: str = "normal"):
         """Check for game-over and transition from forced → normal phase."""
-        if self.phase == "forced":
-            self.phase = "normal"
+        # The side that just moved is opposite of current turn
+        moved_side = not self.board.turn  # True=WHITE, False=BLACK
+        if phase_before == "forced":
+            if moved_side == chess.WHITE:
+                self.white_phase = "normal"
+            else:
+                self.black_phase = "normal"
 
         if self.board.is_checkmate():
             winner = "Black" if self.board.turn == chess.WHITE else "White"
@@ -635,12 +666,13 @@ def main():
 
             elif event.type == ai_move_event:
                 if not game.game_over and not game.is_player_turn():
-                    forced = game.forced_file if game.phase == "forced" else None
+                    phase = game._current_phase()
+                    forced = game._current_forced() if phase == "forced" else None
                     move = ai_choose_move(game.board, forced_file=forced, depth=3)
                     if move:
                         game.board.push(move)
                         game.last_move = move
-                        game._post_move()
+                        game._post_move(phase)
                     game.ai_thinking = False
 
         # -- Draw --
@@ -652,7 +684,10 @@ def main():
 
         renderer.draw_board(game.board, game.selected_square,
                             game.legal_targets, game.last_move)
-        renderer.draw_card_panel(game.card_number, game.forced_file, game.phase)
+        renderer.draw_card_panel(
+            game.white_card, game.white_forced, game.white_phase,
+            game.black_card, game.black_forced, game.black_phase,
+        )
         if game.game_over:
             renderer.draw_game_over(game.game_over_message)
         else:

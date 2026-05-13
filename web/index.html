@@ -100,7 +100,7 @@ body {
 
 /* Card Panel */
 #card-panel {
-  width: 220px;
+  width: 240px;
   background: #23233a;
   border-radius: 12px;
   padding: 20px 16px;
@@ -108,7 +108,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   min-height: 520px;
 }
 #card-panel h2 {
@@ -117,9 +117,24 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
-#chaos-card {
-  width: 150px;
-  height: 210px;
+.card-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.card-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.card-section-label.white-label { color: #f0d9b5; }
+.card-section-label.black-label { color: #888; }
+.chaos-card {
+  width: 120px;
+  height: 168px;
   background: #faf5e6;
   border-radius: 10px;
   border: 3px solid #b5a07a;
@@ -131,42 +146,42 @@ body {
   justify-content: center;
   gap: 4px;
 }
-#chaos-card::before {
+.chaos-card::before {
   content: '';
   position: absolute;
-  inset: 8px;
+  inset: 6px;
   border: 1px solid #b5a07a;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 .card-number {
-  font-size: 64px;
+  font-size: 48px;
   font-weight: 900;
   line-height: 1;
 }
 .card-number.red { color: #b41e1e; }
 .card-number.blue { color: #1e2e80; }
 .card-pawn {
-  font-size: 36px;
+  font-size: 28px;
   line-height: 1;
 }
 .card-corner {
   position: absolute;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
 }
-.card-corner.top { top: 12px; left: 12px; }
-.card-corner.bottom { bottom: 12px; right: 12px; transform: rotate(180deg); }
-#pawn-label {
-  font-size: 18px;
+.card-corner.top { top: 8px; left: 8px; }
+.card-corner.bottom { bottom: 8px; right: 8px; transform: rotate(180deg); }
+.pawn-label {
+  font-size: 15px;
   font-weight: 700;
   color: #fff;
 }
-#phase-text {
-  font-size: 16px;
+.phase-text {
+  font-size: 13px;
   font-weight: 600;
 }
-#phase-text.forced { color: #ffb44c; }
-#phase-text.normal { color: #8cc88c; }
+.phase-text.forced { color: #ffb44c; }
+.phase-text.normal { color: #8cc88c; }
 .divider {
   width: 80%;
   height: 1px;
@@ -258,15 +273,30 @@ body {
     <div id="status-bar">Your turn (White)</div>
   </div>
   <div id="card-panel">
-    <h2>Chaos Card</h2>
-    <div id="chaos-card">
-      <span class="card-corner top" id="corner-top"></span>
-      <span class="card-number" id="card-num"></span>
-      <span class="card-pawn">&#9823;</span>
-      <span class="card-corner bottom" id="corner-bot"></span>
+    <h2>Chaos Cards</h2>
+    <div class="card-section">
+      <span class="card-section-label white-label">&#9812; Your Card</span>
+      <div class="chaos-card" id="white-card">
+        <span class="card-corner top" id="w-corner-top"></span>
+        <span class="card-number" id="w-card-num"></span>
+        <span class="card-pawn">&#9817;</span>
+        <span class="card-corner bottom" id="w-corner-bot"></span>
+      </div>
+      <div class="pawn-label" id="w-pawn-label"></div>
+      <div class="phase-text" id="w-phase-text">Must move first!</div>
     </div>
-    <div id="pawn-label"></div>
-    <div id="phase-text" class="forced">Must move first!</div>
+    <div class="divider"></div>
+    <div class="card-section">
+      <span class="card-section-label black-label">&#9818; Opponent's Card</span>
+      <div class="chaos-card" id="black-card">
+        <span class="card-corner top" id="b-corner-top"></span>
+        <span class="card-number" id="b-card-num"></span>
+        <span class="card-pawn">&#9823;</span>
+        <span class="card-corner bottom" id="b-corner-bot"></span>
+      </div>
+      <div class="pawn-label" id="b-pawn-label"></div>
+      <div class="phase-text" id="b-phase-text">Must move first!</div>
+    </div>
     <div class="divider"></div>
     <div class="controls">
       <div><span class="key">Click</span> Select / Move</div>
