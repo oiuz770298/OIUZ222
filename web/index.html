@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chaos Card Chess</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1a2e;
+  color: #eee;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+#game-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 20px;
+}
+#board-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#board-section h1 {
+  font-size: 28px;
+  color: #ffc83d;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(255,200,60,0.3);
+  letter-spacing: 1px;
+}
+#board-wrap {
+  position: relative;
+  padding: 24px 24px 32px 32px;
+  background: #2a2a3e;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+#chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 72px);
+  grid-template-rows: repeat(8, 72px);
+  border: 3px solid #b5a07a;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.square {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  user-select: none;
+  transition: background 0.15s;
+}
+.square.light { background: #f0d9b5; }
+.square.dark { background: #b58863; }
+.square.selected { background: #baca44 !important; }
+.square.last-move { background: #cdd26a80 !important; }
+.square.check { background: #ff323280 !important; }
+.square.legal-target::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 50%;
+}
+.square.legal-capture::after {
+  content: '';
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(0,0,0,0.2);
+  border-radius: 50%;
+}
+.square:hover { filter: brightness(1.1); }
+.piece-svg {
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.4));
+  z-index: 1;
+}
+.rank-label, .file-label {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b5a07a;
+}
+.rank-label { left: 8px; }
+.file-label { bottom: 8px; }
+
+/* Card Panel */
+#card-panel {
+  width: 240px;
+  background: #23233a;
+  border-radius: 12px;
+  padding: 20px 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 520px;
+}
+#card-panel h2 {
+  font-size: 16px;
+  color: #ffc83d;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.card-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.card-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.card-section-label.white-label { color: #f0d9b5; }
+.card-section-label.black-label { color: #888; }
+.chaos-card {
+  width: 120px;
+  height: 168px;
+  background: #faf5e6;
+  border-radius: 10px;
+  border: 3px solid #b5a07a;
+  position: relative;
+  box-shadow: 3px 3px 0 #111, 0 4px 16px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.chaos-card::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid #b5a07a;
+  border-radius: 5px;
+}
+.card-number {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+}
+.card-number.red { color: #b41e1e; }
+.card-number.blue { color: #1e2e80; }
+.card-pawn {
+  font-size: 28px;
+  line-height: 1;
+}
+.card-corner {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 700;
+}
+.card-corner.top { top: 8px; left: 8px; }
+.card-corner.bottom { bottom: 8px; right: 8px; transform: rotate(180deg); }
+.pawn-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+.phase-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+.phase-text.forced { color: #ffb44c; }
+.phase-text.normal { color: #8cc88c; }
+.divider {
+  width: 80%;
+  height: 1px;
+  background: #3c3c54;
+}
+.leulo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.leulo-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #ffc83d;
+  text-transform: uppercase;
+}
+.leulo-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(255,200,60,0.2);
+}
+.controls {
+  width: 100%;
+  font-size: 14px;
+  color: #a0a0b5;
+}
+.controls div {
+  margin: 4px 0;
+}
+.controls span.key {
+  color: #ffc83d;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+/* Status bar */
+#status-bar {
+  margin-top: 12px;
+  background: #282838;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 100%;
+  text-align: center;
+  min-height: 36px;
+}
+#status-bar.thinking { color: #ffc83d; }
+
+/* Game over overlay */
+#game-over {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 10;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  gap: 12px;
+}
+#game-over.show { display: flex; }
+#game-over h2 {
+  font-size: 26px;
+  color: #fff;
+}
+#game-over p {
+  font-size: 16px;
+  color: #ccc;
+}
+#restart-btn {
+  margin-top: 8px;
+  padding: 10px 28px;
+  font-size: 16px;
+  background: #ffc83d;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+#restart-btn:hover { background: #ffda6a; }
+
+@media (max-width: 900px) {
+  #game-container { flex-direction: column; align-items: center; }
+  .square { width: 56px; height: 56px; }
+  #chess-board { grid-template-columns: repeat(8,56px); grid-template-rows: repeat(8,56px); }
+  .piece-svg { width: 46px; height: 46px; }
+  #card-panel { width: 100%; max-width: 400px; min-height: auto; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <div id="board-section">
+    <h1>Chaos Card Chess</h1>
+    <div id="board-wrap">
+      <div id="chess-board"></div>
+      <div id="game-over">
+        <h2 id="game-over-msg"></h2>
+        <p>Press R or click below to restart</p>
+        <button id="restart-btn" onclick="resetGame()">New Game</button>
+      </div>
+    </div>
+    <div id="status-bar">Your turn (White)</div>
+  </div>
+  <div id="card-panel">
+    <h2>Chaos Cards</h2>
+    <div class="card-section">
+      <span class="card-section-label white-label">&#9812; Your Card</span>
+      <div class="chaos-card" id="white-card">
+        <span class="card-corner top" id="w-corner-top"></span>
+        <span class="card-number" id="w-card-num"></span>
+        <span class="card-pawn">&#9817;</span>
+        <span class="card-corner bottom" id="w-corner-bot"></span>
+      </div>
+      <div class="pawn-label" id="w-pawn-label"></div>
+      <div class="phase-text" id="w-phase-text">Must move first!</div>
+    </div>
+    <div class="divider"></div>
+    <div class="card-section">
+      <span class="card-section-label black-label">&#9818; Opponent's Card</span>
+      <div class="chaos-card" id="black-card">
+        <span class="card-corner top" id="b-corner-top"></span>
+        <span class="card-number" id="b-card-num"></span>
+        <span class="card-pawn">&#9823;</span>
+        <span class="card-corner bottom" id="b-corner-bot"></span>
+      </div>
+      <div class="pawn-label" id="b-pawn-label"></div>
+      <div class="phase-text" id="b-phase-text">Must move first!</div>
+    </div>
+    <div class="divider"></div>
+    <div class="leulo-section">
+      <span class="leulo-label">LEULO RATING</span>
+      <span class="leulo-value" id="leulo-rating">1000</span>
+    </div>
+    <div class="divider"></div>
+    <div class="controls">
+      <div><span class="key">Click</span> Select / Move</div>
+      <div><span class="key">R</span> New Game</div>
+    </div>
+  </div>
+</div>
+<script src="chess.min.js"></script>
+<script src="pieces.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
