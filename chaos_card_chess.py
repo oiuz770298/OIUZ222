@@ -398,11 +398,12 @@ class Renderer:
         if phase == "forced":
             ptxt = self.small_font.render("Must move first!", True, (255, 180, 80))
         else:
-            ptxt = self.small_font.render("Done \u2713", True, (140, 200, 140))
+            ptxt = self.small_font.render("Moved \u2713", True, (140, 200, 140))
         self.screen.blit(ptxt, ptxt.get_rect(centerx=cx, top=card_y + card_h + 22))
 
     def draw_card_panel(self, w_card: int, w_file: str, w_phase: str,
-                        b_card: int, b_file: str, b_phase: str):
+                        b_card: int, b_file: str, b_phase: str,
+                        leulo: int = 1000):
         """Draw both Chaos Cards as mini playing-card graphics."""
         panel_x = CARD_PANEL_X
         panel_w = CARD_PANEL_WIDTH
@@ -431,8 +432,18 @@ class Renderer:
         self._draw_mini_card(cx, panel_rect.y + 300, b_card, b_file, b_phase,
                              "\u265A OPPONENT")
 
+        # Leulo rating
+        leulo_y = panel_rect.y + 510
+        pygame.draw.line(self.screen, (60, 60, 80),
+                         (panel_x + 15, leulo_y - 8),
+                         (panel_x + panel_w - 15, leulo_y - 8))
+        leulo_lbl = self.small_font.render("LEULO RATING", True, CARD_ACCENT)
+        self.screen.blit(leulo_lbl, leulo_lbl.get_rect(centerx=cx, top=leulo_y))
+        leulo_val = self.card_label_font.render(str(leulo), True, WHITE)
+        self.screen.blit(leulo_val, leulo_val.get_rect(centerx=cx, top=leulo_y + 18))
+
         # Controls
-        help_y = panel_rect.y + 530
+        help_y = panel_rect.y + 560
         pygame.draw.line(self.screen, (60, 60, 80),
                          (panel_x + 15, help_y - 10),
                          (panel_x + panel_w - 15, help_y - 10))
@@ -498,9 +509,13 @@ class ChaosCardChess:
         self.game_over_message = ""
         self.player_color = chess.WHITE
         self.ai_thinking = False
+        self.leulo = getattr(self, '_leulo', 1000)  # persist across resets
 
     def reset(self):
+        saved_leulo = self.leulo
         self.__init__()
+        self.leulo = saved_leulo
+        self._leulo = saved_leulo
 
     # -- Helpers -------------------------------------------------------------
 
@@ -572,18 +587,23 @@ class ChaosCardChess:
             winner = "Black" if self.board.turn == chess.WHITE else "White"
             self.game_over = True
             self.game_over_message = f"Checkmate! {winner} wins!"
+            self.leulo += 25 if winner == "White" else -20
         elif self.board.is_stalemate():
             self.game_over = True
             self.game_over_message = "Stalemate — Draw!"
+            self.leulo += 5
         elif self.board.is_insufficient_material():
             self.game_over = True
             self.game_over_message = "Insufficient material — Draw!"
+            self.leulo += 5
         elif self.board.can_claim_threefold_repetition():
             self.game_over = True
             self.game_over_message = "Threefold repetition — Draw!"
+            self.leulo += 5
         elif self.board.can_claim_fifty_moves():
             self.game_over = True
             self.game_over_message = "50-move rule — Draw!"
+            self.leulo += 5
 
     def status_text(self) -> str:
         turn = "White" if self.board.turn == chess.WHITE else "Black"
@@ -687,6 +707,7 @@ def main():
         renderer.draw_card_panel(
             game.white_card, game.white_forced, game.white_phase,
             game.black_card, game.black_forced, game.black_phase,
+            game.leulo,
         )
         if game.game_over:
             renderer.draw_game_over(game.game_over_message)

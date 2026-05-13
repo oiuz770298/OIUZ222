@@ -187,6 +187,26 @@ body {
   height: 1px;
   background: #3c3c54;
 }
+.leulo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.leulo-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #ffc83d;
+  text-transform: uppercase;
+}
+.leulo-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(255,200,60,0.2);
+}
 .controls {
   width: 100%;
   font-size: 14px;
@@ -296,6 +316,11 @@ body {
       </div>
       <div class="pawn-label" id="b-pawn-label"></div>
       <div class="phase-text" id="b-phase-text">Must move first!</div>
+    </div>
+    <div class="divider"></div>
+    <div class="leulo-section">
+      <span class="leulo-label">LEULO RATING</span>
+      <span class="leulo-value" id="leulo-rating">1000</span>
     </div>
     <div class="divider"></div>
     <div class="controls">

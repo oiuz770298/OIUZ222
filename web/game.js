@@ -69,6 +69,7 @@ const PST = {
 
 let game, whiteCard, whiteForced, whitePhase, blackCard, blackForced, blackPhase;
 let selectedSquare, legalTargets, lastMove, aiThinking;
+let leulo = parseInt(localStorage.getItem('leulo') || '1000', 10);
 
 function initGame() {
   game = new Chess();
@@ -83,6 +84,7 @@ function initGame() {
   lastMove = null;
   aiThinking = false;
   updateCards();
+  updateLeulo();
   renderBoard();
   updateStatus();
 }
@@ -200,7 +202,7 @@ function updateOneCard(prefix, cardNum, forcedFile, phase) {
     phaseEl.textContent = 'Must move first!';
     phaseEl.className = 'phase-text forced';
   } else {
-    phaseEl.textContent = 'Done ✓';
+    phaseEl.textContent = 'Moved ✓';
     phaseEl.className = 'phase-text normal';
   }
 }
@@ -290,8 +292,10 @@ function updateStatus() {
 function checkGameOver() {
   if (!game.game_over()) return;
   const msgEl = document.getElementById('game-over-msg');
+  let playerWon = false;
   if (game.in_checkmate()) {
     const winner = game.turn() === 'w' ? 'Black' : 'White';
+    playerWon = winner === 'White';
     msgEl.textContent = `Checkmate! ${winner} wins!`;
   } else if (game.in_stalemate()) {
     msgEl.textContent = 'Stalemate — Draw!';
@@ -300,9 +304,22 @@ function checkGameOver() {
   } else if (game.in_threefold_repetition()) {
     msgEl.textContent = 'Threefold repetition — Draw!';
   }
+  // Update Leulo rating
+  if (game.in_checkmate()) {
+    leulo += playerWon ? 25 : -20;
+  } else {
+    leulo += 5; // small gain for draws
+  }
+  updateLeulo();
   document.getElementById('game-over').classList.add('show');
   const el = document.getElementById('status-bar');
   el.textContent = msgEl.textContent;
+}
+
+function updateLeulo() {
+  const el = document.getElementById('leulo-rating');
+  if (el) el.textContent = leulo;
+  localStorage.setItem('leulo', leulo);
 }
 
 // --- AI ---
