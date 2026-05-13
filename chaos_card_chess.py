@@ -261,11 +261,11 @@ class Renderer:
 
     def _init_fonts(self):
         pygame.font.init()
-        self.piece_font = pygame.font.SysFont("segoeuisymbol,symbola,arial", SQUARE_SIZE - 12)
-        self.ui_font = pygame.font.SysFont("arial,helvetica,sans", 22)
-        self.small_font = pygame.font.SysFont("arial,helvetica,sans", 16)
-        self.card_font = pygame.font.SysFont("arial,helvetica,sans", 36, bold=True)
-        self.title_font = pygame.font.SysFont("arial,helvetica,sans", 28, bold=True)
+        self.piece_font = pygame.font.SysFont("dejavusans,segoeuisymbol,symbola,arial", SQUARE_SIZE - 12)
+        self.ui_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 22)
+        self.small_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 16)
+        self.card_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 36, bold=True)
+        self.title_font = pygame.font.SysFont("dejavusans,arial,helvetica,sans", 28, bold=True)
 
     # -- Board ---------------------------------------------------------------
 
